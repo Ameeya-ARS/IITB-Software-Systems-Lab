@@ -1,0 +1,30 @@
+First I moved inside the git-task2 folder.
+
+Then I deleted creds.env from local folder using rm creds.env
+
+Then I added the changes by git add creds.env
+
+And then commited the changes by git commit -m "Removed sensitive info"
+
+git filter-branch --force --index-filter "git rm --cached --ignore-unmatch ./creds.env" --prune-empty --tag-name-filter cat -- --all
+the above command does 3 things  - Force Git to process, but not check out, the entire history of every branch and tag
+                                 - Remove the specified file, as well as any empty commits generated as a result
+                                 - Overwrite the existing tags
+
+
+Then added .env file to .gitignore do that I dont commit it again by mistake
+
+Force all objects in the local repository to be dereferenced and garbage collected with the following commands
+                       - git for-each-ref --format="delete %(refname)" refs/original | git update-ref --stdin
+                       - git reflog expire --expire=now --all
+                       - git gc --prune=now
+
+Now when i checked git log , the commit ids were changed and creds.env was nowhere to be found
+
+Now when I tried git log --reflog , the original commit history was also not present and creds.env was not found
+
+Then I tried git checkout <commit-id> creds.env but with every id it returned the message 
+                    - error: pathspec 'creds.env' did not match any file(s) known to git
+
+
+I got the following commands from a website with the address "https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository"

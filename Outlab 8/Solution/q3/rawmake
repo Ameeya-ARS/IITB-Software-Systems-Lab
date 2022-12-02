@@ -1,0 +1,43 @@
+export LD_LIBRARY_PATH += /usr/local/lib
+
+helloworld : helloworld.cpp
+	g++ helloworld.cpp -o helloworld
+
+usespthread : usespthread.cpp
+	g++ usespthread.cpp -o usespthread -lpthread
+
+libMyEngineStatic.a : myengine/myengine.cpp
+	g++ -c myengine/myengine.cpp -o myengine/myengine.o
+	ar rcs myengine/libMyEngineStatic.a myengine/myengine.o
+
+myengine/libMyEngineStatic.a : myengine/myengine.cpp
+	g++ -c myengine/myengine.cpp -o myengine/myengine.o
+	ar rcs myengine/libMyEngineStatic.a myengine/myengine.o
+
+libMyEngineDynamic.so : myengine/myengine.cpp
+	g++ -o myengine/libMyEngineDynamic.so -fpic -shared myengine/myengine.cpp
+
+myengine/libMyEngineDynamic.so : myengine/myengine.cpp
+	g++ -o myengine/libMyEngineDynamic.so -fpic -shared myengine/myengine.cpp
+
+.PHONY: installdynamic
+installdynamic : myengine/libMyEngineDynamic.so
+	cp myengine/libMyEngineDynamic.so /usr/local/lib
+	ldconfig -n -v /usr/local/lib
+	cp myengine/myengine.hpp /usr/local/include
+
+.PHONY: installstatic
+installstatic : myengine/libMyEngineStatic.a
+	cp myengine/libMyEngineStatic.a /usr/local/lib
+	ldconfig -n -v /usr/local/lib
+	cp myengine/myengine.hpp /usr/local/include
+
+.PHONY: clean
+clean :
+	grep -rIL . | xargs rm -fr
+
+mygamestatic: mygame/mygame.cpp
+	g++ -static mygame/mygame.cpp -lMyEngineStatic -o mygamestatic
+
+mygamedynamic: mygame/mygame.cpp
+	g++ mygame/mygame.cpp -lMyEngineDynamic -o mygamedynamic -Wl,-rpath,/usr/local/lib

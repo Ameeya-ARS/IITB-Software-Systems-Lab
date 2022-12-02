@@ -1,0 +1,16 @@
+https://www.javatpoint.com/command-line-argument
+https://www.javatpoint.com/java-string-to-int
+https://www.javatpoint.com/java-regex
+https://www.w3schools.com/java/java_regex.asp
+https://www.geeksforgeeks.org/check-if-a-string-contains-only-alphabets-in-java/
+https://www.w3schools.com/java/java_strings.asp
+http://www.java2s.com/Code/Java/Regular-Expressions/Findallmatches.htm
+https://www.tutorialspoint.com/getting-the-list-of-all-the-matches-java-regular-expressions
+https://www.w3schools.com/java/java_arraylist.asp
+https://www.programiz.com/java-programming/examples/alphabet
+https://stackoverflow.com/questions/60093999/using-hash-maps-in-java-to-find-frequency-of-characters-in-a-string
+https://www.w3schools.com/java/java_files_create.asp
+https://www.javatpoint.com/how-to-delete-a-file-in-java
+https://stackoverflow.com/questions/26539509/constructor-class-in-class-class-cannot-be-applied-to-given-types
+https://stackoverflow.com/questions/23889811/java-constructor-in-class-cannot-be-applied-to-given-types
+https://stackoverflow.com/questions/3644266/how-can-we-match-an-bn

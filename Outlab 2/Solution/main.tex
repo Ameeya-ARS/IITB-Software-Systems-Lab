@@ -1,0 +1,240 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper, hmargin=1.2in, bottom=1.5in]{geometry}
+\usepackage[parfill]{parskip}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\newtheorem{definition}{Definition}[section]
+\usepackage[linesnumbered, ruled, vlined]{algorithm2e}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{floatrow}
+\usepackage{graphicx}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.7pt}
+\lhead{200050006 - 200050053}
+\rhead{Software Systems Laboratory}
+\cfoot{Page \thepage}
+\begin{document}
+\title{Outlab 2: \LaTeX and gdb}
+\author{Ameeya Ranjan Sethy \\ jasani Parth Alpeshbhai}
+\date{Autumn 2021}
+\maketitle
+\tableofcontents
+\thispagestyle{empty}
+\setcounter{page}{0}
+\newpage
+\section{Basic Theory of Linear Recurrences}
+We all know about the Fibonacci Sequence, given by the recurrence$$f_{n+2} = f_{n+1} + f_{n}$$and initialised as $f_0 = 0$, $f_1 = 1$. This is an instance of what is called a Linear Recurrence Sequence, or LRS.
+
+\vspace{1em}
+\begin{definition}
+\label{def1.1}
+LRS $(u_n)_{n=0}^{\infty}$ of order k over field $\mathbb{F}$ is sequence determined by recurrence
+\begin{equation}
+\label{eq:one}
+    u_{n+k} = \sum_{j=0}^{k-1}a_{j}u_{n+j}
+\end{equation}
+for integers n $\ge$ 0 with  $a_0,...,a_{k-1} \in \mathbb{F}, a_0 \ne 0,$ and an initialisation vector $$[u_0 ~~ ... ~~ u_{k-1}]^{T} \in \mathbb{F}^{k\times1}$$
+\end{definition}
+Thanks to Definition \ref{def1.1}, when we say that we are given $(u_n)_{n=0}^{\infty}$ of order k over $\mathbb{F}$, we actually mean that we are given the 2k constants $a_0,...,a_{k-1},u_0,...,u_{k-1} \in \mathbb{F}.$
+
+The Fibonacci sequence shows up a lot in pop culture and DSA assignments, however, the study of LRS is a vast subject in its own right, with applications in software verification, quantum computing, formal languages, statistical physics, combinatorics, and theoretical biology, to name a few.
+
+\subsection{Computing terms of an LRS}
+For a fixed k, assuming we can do arithmetic operations in $\mathbb{F}$ in constant time, how long does it take to compute the $n^{th}$ term of a given LRS?
+
+\begin{algorithm}[ht]
+\label{algo1}
+\caption {Naive first attempt $\mathsf{naive}$}
+\SetAlgoLined
+\DontPrintSemicolon
+\KwData{LRS $(u_n)_{n=0}^{\infty}$, n}
+\KwResult{$u_n$}
+\If{$n < k$}{return $u_n$}
+\Return $u_{n+k} = \Sigma_{j=0}^{k-1}a_{j}.\textbf{naive}((u_n)_{n=0}^{\infty}, n-k+j)$
+\end{algorithm}
+By the way, notice the use of \verb=\mathsf= to write \textbf{"naive"}.This algorithm, unfortunately, is painfully inefficient: as you can see, the number of recursive calls will be exponentially many in n. This immediately prompts a more “bottom-up” \footnote[3]{Not to be confused with the drinking phrase} approach: we start from the first k terms, use them to compute the next term, and iterate this way upto n. This takes $\mathcal{O}(n)$ iterations.
+
+But we can do better, in fact, we only need $\mathcal{O}(log~n)$ iterations.\footnote[4]{In complexity analysis, the base of the logarithm is implicitly taken as 2}
+
+Technically, even Algorithm \ref{algo2} is \textit{inefficient}: when we analyse complexity, we do it with respect to the size of the \textit{bit representation} of the input, i.e. how many bits it takes to specify the input. An integer n takes log n bits to represent, so the parameter for describing complexity is not n, but\\ $\eta$ = log n.
+
+\newpage
+\begin{algorithm}[ht]
+\label{algo2}
+\caption {Bottom up dynamic programming approach $\mathsf{bottomup}$}
+\SetAlgoLined
+\DontPrintSemicolon
+\KwData{LRS $(u_n)_{n=0}^{\infty}$, n}
+\KwResult{$u_n$}
+\If{n \textless k}{return $u_n$}
+$circularArray \gets u_0,...,u_{k-1}$\\
+$arrayStartIndex \gets 0$\\
+$n_{last} \gets k-1$\\
+\While{$n_{last}$ \textless n}{
+$nextTerm \gets \Sigma_{j=0}^{k-1}a_{j}.circularArray[(arrayStartIndex+j) \% k]$\\
+$circularArray[arrayStartIndex] \gets nextTerm$\\
+$arrayStartIndex \gets (arrayStartIndex+1)\%k$\\
+$n_{last} \gets n_{last}+1$\\
+}
+\textbf{return} circularArray[(arrayStartIndex+k-1) \% k]
+\end{algorithm}
+
+Yes, we can compute the $n^{th}$ term with $\mathcal{O}(n)$ operations, and the trick here is a method called \textbf{iterated squaring.} Given an LRS $(u_n)_{n=0}^{\infty}$, define its companion matrix $\textbf{M} \in \mathbb{F}^{k \times k}$ as
+\begin{equation}
+\label{eq:two}
+    \textbf{M} = 
+    \begin{bmatrix}
+     0 & 1 & 0 & \cdots & 0 \\
+     0 & 0 & 1 & \cdots & 0 \\
+     \vdots & \vdots & \vdots & \ddots & \vdots \\
+     0 & 0 & 0 & \cdots & 1 \\
+     a_{0} & a_{1} & a_{2} & \cdots & a_{k-1}
+    \end{bmatrix}
+\end{equation}
+Compare equations \ref{eq:one} and \ref{eq:two} and observe that
+\begin{equation}
+\label{eq:three}
+    \textbf{M}^n
+    \begin{bmatrix}
+     u_0 \\
+     \vdots \\
+     u_{k-1}
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+     u_n \\
+     \vdots \\
+     u_{n+k-1} \\
+    \end{bmatrix}
+\end{equation}
+Iterated squaring hinges on this ridiculously trivial observation: consider the (unique!) binary representation of n: if you append a 0 to it, it becomes 2n, if you append a 1, it becomes \\2n + 1.
+
+Given \textbf{M} to compute $\textbf{M}^n$, all we have to do is start with \textbf{I}, read the binary representation of n from most to least significant: if at some point we have $\textbf{M}^j,\textbf{M}^j.\textbf{M}^j=\textbf{M}^{2j},\textbf{M}^{2j}.\textbf{M}=\textbf{M}^{2j+1}$
+
+In Algorithm 3, we use a data structure called a \textbf{stack.} The constant time operation it supports are \begin{itemize}
+    \item pushing an element onto the top of the stack
+    \item popping an element from the top of the stack (i.e. deleting the topmost element)
+    \item reading the topmost element
+    \item checking whether the stack is empty
+\end{itemize}
+As you can see, it’s Last In, First Out.
+
+The division while loop gets the bits of n from least to most significant, the iterated square while loop uses the bits from most to least significant. A stack fits the bill.
+\newpage
+\begin{algorithm}[ht]
+\caption {Iterated squaring approach $\mathsf{efficient}$}
+\SetAlgoLined
+\DontPrintSemicolon
+\KwData{LRS $(u_n)_{n=0}^{\infty}$, n}
+\KwResult{$u_n$}
+$quotient \gets n$\\
+$operationStack \gets \{\}$\\
+$\textbf{M} \gets companion ((u_n)_{n=0}^{\infty})$\\
+$\textbf{x} \gets [u_0...u_{k-1}]^T$\\
+$\textbf{A} \gets \textbf{I}_{k \times k}$\\
+\While{$quotient \ne 0$}{
+$push(operationStack,quotient\%2)$\\
+$quotient \gets quotient/2$
+}
+\While{operationStack $\ne \{\}$}{
+$\textbf{A} \gets \textbf{A.A}$\\
+\If{top(operationStack)=1}{
+$\textbf{A} \gets \textbf{A.M}$
+}
+$pop(operationStack)$
+}
+$\textbf{y} \gets \textbf{Ax}$\\
+$\textbf{return y[0]}$\\
+\end{algorithm}
+\subsection{Problems associated with LRS}
+Surprisingly, the following rather simple \textit{decision problem}\footnote[5]{Given an arbitrary input, answer a particular question about it with Yes or No}, referred to as the Skolem problem, has been open for the last eight decades or so.
+
+\begin{definition}[Skolem Problem]
+For the arbitrary LRS $(u_n)_{n=0}^{\infty}$ whose description is given as input, does there exist an integer n$\ge$0 such that $u_n=0$?
+\end{definition}
+
+This has a bunch of equivalent formulations, and by being open, we mean that nobody really knows of an algorithm that can decide it (the algorithm should terminate and give the correct answer for all possible inputs), or whether there is such an algorithm at all.
+
+We can also consider another related problem for LRS over fields where the $>$ operator is defined:
+
+\begin{definition}[Positivity Problem]
+For the arbitrary LRS $(u_n)_{n=0}^{\infty}$ whose description is given as input, is it the case that for all integers n$\ge$0, $u_n\ge0$?
+\end{definition}
+
+Deciding even special cases of these problems (i.e. restricting what kind of LRS can be fed as input) requires sophisticated maths, like Kronecker’s theorem on Diophantine approximations, [\cite{topology},Chap. 7, Sec. 1.3, Prop. 7], and profound properties of “algebraic” numbers \cite{algebra} and then some more mathematical arsenal \cite{recurrence,geometry}
+
+If you found this short write up interesting, here is a survey talk about the problem, given not so long ago
+\newpage
+\section{Programming}
+
+ \begin{figure*}[!htb]
+ \RawFloats
+	\centering
+	\begin{minipage}{.5\columnwidth}
+		\centering
+		\includegraphics[width=0.9\textwidth]{image1.png}
+		\caption{1st image}
+		\label{label1}
+	\end{minipage}%
+	\begin{minipage}{.5\columnwidth}
+		\centering
+		\includegraphics[width=0.9\textwidth]{image2.png}
+		\caption{2nd image}
+		\label{label2}
+	\end{minipage}
+\end{figure*}
+\vspace{1.5em}
+\begin{verbatim}
+$1 = std::vector of length 2, capacity 2 = {std::vector of length 2, capacity 2 = {1, 0},
+  std::vector of length 2, capacity 2 = {0, 1}}
+\end{verbatim}
+
+\begin{verbatim}
+$2 = std::stack wrapping: std::deque with 9 elements = {0, 1, 0, 0, 0, 1, 1, 0, 1}
+\end{verbatim}
+\vspace{1.3em}
+\begin{table}[!htb]
+\begin{center}
+\begin{tabularx}{0.8\textwidth} { 
+  >{\raggedright\arraybackslash}X 
+  | >{\centering\arraybackslash}X}
+  \hline
+ \textbf{operations} & \textbf{working} \\
+ \hline
+ \{0, 1, 0, 0, 0, 1, 1, 0, 1\} & \{1, 0, 0, 1\} \\
+ \hline
+ \{0, 1, 0, 0, 0, 1, 1, 0\} & \{0, 1, 1, 1\} \\
+ \hline
+ \{0, 1, 0, 0, 0, 1, 1\} & \{1, 1, 1, 2\} \\
+ \hline
+ \{0, 1, 0, 0, 0, 1\} & \{3, 5, 5, 8\} \\
+ \hline
+ \{0, 1, 0, 0, 0\} & \{55, 89, 89, 144\} \\
+ \hline
+ \{0, 1, 0, 0\} & \{10946, 17711, 17711, 28657\} \\
+ \hline
+ \{0, 1, 0\} & \{4e+8, 7e+8, 7e+8, 1e+9\} \\
+ \hline
+ \{0, 1\} & \{6e+17, 1e+18, 1e+18, 1e+18\} \\
+ \hline
+ \{0\} & \{2e+36, 4e+36, 4e+36, 7e+36\} \\
+ \hline
+ \{\} & \{2e+73, 4e+73, 4e+73, 6e+73\} \\
+\hline
+\end{tabularx}
+\caption{Printing operations and working}
+\end{center}
+\end{table}
+
+\bibliographystyle{plainurl}
+\bibliography{main}
+\end{document}
